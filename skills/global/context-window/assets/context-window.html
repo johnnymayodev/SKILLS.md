@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Context inventory explorer</title>
+<style>
+:root{color-scheme:light dark;--background:#fff;--foreground:#171717;--muted:#f5f5f5;--muted-foreground:#666;--card:#fafafa;--secondary:#eee;--secondary-foreground:#262626;--border:#ddd;--ring:#2563eb;--primary:#2563eb;--primary-foreground:#fff;--chart-1:#2563eb;--chart-2:#0d9488;--chart-3:#b45309;--chart-4:#7c3aed;--chart-5:#be185d;--chart-6:#0284c7;--radius:12px;--font-sans:ui-sans-serif,system-ui,sans-serif;--font-mono:ui-monospace,SFMono-Regular,monospace}
+@media(prefers-color-scheme:dark){:root{--background:#000;--foreground:#fff;--muted:#151515;--muted-foreground:#aaa;--card:#0d0d0d;--secondary:#202020;--secondary-foreground:#eee;--border:#303030;--ring:#93b4ff;--primary:#a6beff;--primary-foreground:#08152c;--chart-1:#7fa5ff;--chart-2:#5dd5bc;--chart-3:#e4bb72;--chart-4:#bd9aff;--chart-5:#f4a1cc;--chart-6:#83d5fa}}
+*{box-sizing:border-box}body{margin:0;color:var(--foreground);font-family:var(--font-sans);font-size:14px;line-height:1.5}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+.meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted-foreground);font-size:11px;letter-spacing:.07em;text-transform:uppercase;margin:0 0 12px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.metric{padding:16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);text-align:left;color:var(--foreground)}.metric:hover,.metric.active{border-color:var(--primary)}.metric strong{display:block;font-size:29px;font-weight:600;letter-spacing:-1px;line-height:1.2}.metric .label{display:block;font-size:12px;margin:5px 0 2px}.metric small{font-size:11px;color:var(--muted-foreground)}
+.capacity{margin-bottom:16px;padding:16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}.capacity-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.capacity-title{font-size:14px;font-weight:600}.mode{font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--secondary);color:var(--foreground)}.capacity-value{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px}.capacity-value strong{font-size:30px;font-weight:600;letter-spacing:-1px;line-height:1.2}.capacity-value span{font-size:12px;color:var(--muted-foreground)}.track{height:30px;border:1px solid var(--border);background:var(--secondary);border-radius:7px;overflow:hidden}.fill{height:100%;background:var(--chart-1)}.axis{display:flex;justify-content:space-between;color:var(--muted-foreground);font-family:var(--font-mono);font-size:10px;margin:5px 0 10px}.capacity-legend{display:flex;justify-content:space-between;gap:10px;font-size:12px;flex-wrap:wrap}.capacity-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--chart-1);margin-right:5px}.capacity-legend .available i{background:var(--secondary);border:1px solid var(--border)}.baseline{display:flex;gap:12px;align-items:center;border-top:1px solid var(--border);margin-top:14px;padding-top:12px}.baseline .track{width:90px;flex-shrink:0;height:8px;border-radius:3px}.baseline .fill{background:var(--chart-2)}.baseline span{font-size:11px;color:var(--muted-foreground)}.capacity-note{font-size:11px;color:var(--muted-foreground);margin:12px 0 0;line-height:1.5}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.search{flex:1;min-width:160px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:0 12px;height:42px;background:var(--card)}.search svg{width:16px;height:16px;flex-shrink:0;color:var(--muted-foreground)}input{width:100%;min-width:0;border:0;background:transparent;color:var(--foreground);outline:0}select{max-width:100%;height:42px;padding:0 10px;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:8px}
+.tabs{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px}.tab,.reset,.page{border:1px solid var(--border);border-radius:7px;background:transparent;color:var(--muted-foreground);padding:6px 10px;font-size:12px}.tab[aria-pressed=true]{background:var(--secondary);color:var(--foreground);border-color:var(--foreground)}.tab span{margin-left:5px;opacity:.65}.reset{margin-left:auto}.resultmeta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted-foreground);margin-bottom:8px}
+.list{border-top:1px solid var(--border);min-height:120px;max-height:480px;overflow-y:auto;overscroll-behavior:contain}
+details{border-bottom:1px solid var(--border)}summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:7px minmax(0,1fr) auto 12px;align-items:center;gap:10px;padding:13px 1px}summary::-webkit-details-marker{display:none}.marker{height:7px;width:7px;border-radius:2px;background:var(--c)}.name{font-family:var(--font-mono);font-size:12px;overflow-wrap:anywhere;line-height:1.5}.sub{display:block;color:var(--muted-foreground);font-family:var(--font-sans);font-size:11px;margin-top:3px}.badge{font-size:10px;white-space:nowrap;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--muted-foreground)}.badge.read{color:var(--chart-2);border-color:var(--chart-2)}.chevron{font-size:13px;color:var(--muted-foreground);text-align:center}details[open] .chevron{transform:rotate(90deg)}.detail{margin:0 0 13px 18px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px}.detail p{margin:0;overflow-wrap:anywhere}.detail .meaning{margin-top:8px;color:var(--muted-foreground)}.empty{text-align:center;padding:40px 12px;color:var(--muted-foreground);font-size:13px}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}.pager span{font-size:11px;color:var(--muted-foreground)}.page{color:var(--foreground)}.page:disabled{opacity:.35;cursor:default}.pager nav{display:flex;gap:6px}.foot{border-top:1px solid var(--border);padding-top:12px;margin:16px 0 0;color:var(--muted-foreground);font-size:11px;line-height:1.6}.foot strong{color:var(--foreground);font-weight:500}
+@media(max-width:480px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric{padding:12px}.metric strong{font-size:25px}.metric small{font-size:10px}.meta{font-size:10px;letter-spacing:.02em}.controls select{flex:1}.search{flex-basis:100%}.reset{margin-left:0}summary{gap:7px}.badge{font-size:9px;padding:2px 4px}}
+.segments{display:flex;overflow:hidden}.segment{border:0;padding:0;margin:0;min-width:0;height:100%;background:var(--segment-color);border-radius:0;flex-shrink:0}.segment:hover,.segment:focus-visible{filter:brightness(1.2);outline:2px solid var(--foreground);outline-offset:-2px}.segment[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--foreground)}.breakdown{border-top:1px solid var(--border);padding-top:12px;margin-top:14px}.breakdown-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin-bottom:8px}.breakdown-title small{font-size:10px;color:var(--muted-foreground)}.zoom-track{height:22px;display:flex;border-radius:5px;overflow:hidden}.group-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}.group-button{text-align:left;background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--foreground);font-size:10px;min-width:0}.group-button[aria-pressed=true]{background:var(--secondary);border-color:var(--foreground)}.group-button i{display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--segment-color);margin-right:5px}.group-button strong{display:block;font-size:13px;font-weight:500;margin-top:3px}.group-button span{color:var(--muted-foreground);font-size:10px}.attribution-panel{background:var(--background);border:1px solid var(--border);border-radius:8px;padding:12px}.attribution-heading{display:flex;justify-content:space-between;gap:10px;font-size:12px;font-weight:600}.attribution-heading span{font-size:10px;color:var(--muted-foreground);font-weight:400}.source-list{max-height:160px;overflow:auto;margin-top:8px}.source-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:11px}.source-row .source-name{overflow-wrap:anywhere}.source-row small{display:block;font-size:10px;color:var(--muted-foreground);line-height:1.5;margin-top:3px}.source-row .source-size{text-align:right;white-space:nowrap}.source-row .source-size b{font-size:12px;font-weight:500}.method{border-bottom:0;margin-top:8px}.method summary{display:block;padding:5px 0;font-size:11px;color:var(--muted-foreground)}.method p{font-size:11px;color:var(--muted-foreground);margin:4px 0;line-height:1.5}.allocation-note{font-size:11px;color:var(--muted-foreground);margin:8px 0 0}
+@media(max-width:480px){.group-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.breakdown-title{align-items:flex-start;flex-direction:column}.attribution-heading{flex-wrap:wrap}}
+.source-path{display:block;font-family:var(--font-mono);font-size:10px;font-weight:400;color:var(--foreground);overflow-wrap:anywhere;white-space:normal;line-height:1.5;margin-top:4px}.missing-path{display:block;color:var(--muted-foreground);font-size:10px;font-weight:400;margin-top:4px}
+</style></head><body>
+<div class="meta"><span>Observed session inventory</span><span>Measured usage snapshot</span></div>
+<section class="capacity" aria-label="Context window usage">
+<div class="capacity-head"><span class="capacity-title">Context window</span><button class="mode" id="usageMode" aria-pressed="true">Include response: on</button></div>
+<div class="capacity-value"><strong id="usagePercent">—</strong><span id="usageTokens">Reading saved snapshot…</span></div>
+<div id="usageBar" class="track" role="group" aria-label="Recorded context window usage, with clickable source segments"><div class="fill segments" id="usageFill"></div></div>
+<div class="axis" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+<div class="capacity-legend"><span><i aria-hidden="true"></i><b id="usedTokens">—</b> used</span><span class="available"><i aria-hidden="true"></i><b id="remainingTokens">—</b> headroom</span></div>
+<div class="breakdown">
+<div class="breakdown-title"><span id="breakdownTitle">Inside the used portion</span><small>Measured total · Estimated source shares</small></div>
+<div id="zoomSegments" class="zoom-track" role="group" aria-label="Expanded view of occupied context"></div>
+<div id="groupLegend" class="group-legend" role="group" aria-label="Select a context source group"></div>
+<div class="attribution-panel"><div id="attributionHeading" class="attribution-heading"></div><div id="sourceList" class="source-list" aria-live="polite"></div></div>
+<p class="allocation-note" id="allocationNote"></p>
+<details class="method"><summary>How these shares were calculated ▾</summary><p id="attributionMethod"></p></details>
+</div>
+<div class="baseline"><div class="track" role="img" id="startupBar" aria-label="First recorded request usage"><div class="fill" id="startupFill"></div></div><span id="startupUsage">First recorded request: —</span></div>
+<p class="capacity-note" id="usageTime"></p>
+<p class="capacity-note" id="usageExplanation">Latest request, not cumulative token billing. Cached input still occupies context. Headroom is not a guarantee of output length; output limits and compaction also apply.</p>
+</section>
+<div class="metrics">
+<button class="metric" data-type="Agent instructions" aria-pressed="false"><strong id="agentCount">—</strong><span class="label">Agent instructions</span><small>Supplied or read files</small></button>
+<button class="metric" data-type="Skills" aria-pressed="false"><strong id="skillCount">—</strong><span class="label">Skills listed</span><small id="skillReadCount"></small></button>
+<button class="metric" data-type="Tools" aria-pressed="false"><strong id="registryCount">—</strong><span class="label">Tool entries observed</span><small id="toolDetail"></small></button>
+<button class="metric" data-type="Sources" aria-pressed="false"><strong id="sourceCount">—</strong><span class="label">Context sources</span><small>4 instruction groups</small></button>
+</div>
+<p class="capacity-note" style="margin:12px 0 18px">Inventory counts below describe entries, not their individual token sizes.</p>
+<div class="controls"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="Search names, paths, or descriptions…" aria-label="Search context inventory"></label>
+<select id="status" aria-label="Filter by evidence"><option value="all">All evidence</option><option value="Read">File text read</option><option value="Supplied">Supplied instructions</option><option value="Attached">Conversation attachments</option><option value="Catalog">Skill catalog only</option><option value="Registry">Tool registry</option><option value="Exposed">Interface controls</option><option value="Summary">Instruction summaries</option></select></div>
+<div class="tabs" role="group" aria-label="Inventory type">
+<button class="tab" data-type="All" aria-pressed="true">All<span id="allCount"></span></button>
+<button class="tab" data-type="Agent instructions" aria-pressed="false">Agent instructions<span id="agentTabCount"></span></button>
+<button class="tab" data-type="Skills" aria-pressed="false">Skills<span id="skillTabCount"></span></button>
+<button class="tab" data-type="Tools" aria-pressed="false">Tools<span id="toolTabCount"></span></button>
+<button class="tab" data-type="Files" aria-pressed="false">Files &amp; attachments<span id="fileTabCount"></span></button>
+<button class="tab" data-type="Sources" aria-pressed="false">Sources<span id="sourceTabCount"></span></button>
+<button class="reset" id="reset">Reset filters</button></div>
+<div class="resultmeta"><span id="resultCount" role="status" aria-live="polite"></span><span>Expand an entry for evidence</span></div>
+<div id="list" class="list" aria-label="Context entries"></div>
+<div class="pager"><span id="pageInfo"></span><nav aria-label="Result pages"><button id="prev" class="page">← Previous</button><button id="next" class="page">Next →</button></nav></div>
+<p class="foot"><strong>Read ≠ listed ≠ retained.</strong> This inventory reflects names and reads observed in the selected session snapshot. Catalog membership is distinct from reading instructions; registry membership is distinct from loading a full tool schema. Historical entries may not remain after compaction. Private instruction sources are summarized. This file does not update automatically.</p>
+<script>
+"use strict";
+const DATA = __CONTEXT_INVENTORY__;
+const state={type:"All",query:"",status:"all",page:0};
+const SIZE=10;
+const el=id=>document.getElementById(id);
+const escapeHTML=value=>String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+function sourcePaths(item,fileBacked=["Agent instructions","Skills","Files"].includes(item.type)){
+ const paths=item.paths||[];
+ return paths.length?paths.map(path=>'<code class="source-path">'+escapeHTML(path)+'</code>').join(""):fileBacked?'<span class="missing-path">Path not recorded</span>':"";
+}
+function matching(){return DATA.filter(item=>(state.type==="All"||item.type===state.type)&&(state.status==="all"||item.status===state.status)&&(!state.query||[item.name,item.group,item.description,item.detail,item.status,...(item.paths||[])].join(" ").toLowerCase().includes(state.query)));}
+function render(){
+ const items=matching(), pages=Math.max(1,Math.ceil(items.length/SIZE));
+ state.page=Math.min(state.page,pages-1);
+ const start=state.page*SIZE;
+ el("allCount").textContent=DATA.length;
+ el("resultCount").textContent=items.length+" "+(items.length===1?"entry":"entries")+(state.type==="All"?"":" · "+state.type.toLowerCase());
+ el("pageInfo").textContent=items.length?(start+1)+"–"+Math.min(start+SIZE,items.length)+" of "+items.length:"No matching entries";
+ el("prev").disabled=state.page===0;el("next").disabled=state.page>=pages-1;
+ el("list").innerHTML=items.length?items.slice(start,start+SIZE).map(item=>{
+ const color={"Agent instructions":"var(--chart-4)",Skills:"var(--chart-2)",Tools:"var(--chart-1)",Sources:"var(--chart-3)",Files:"var(--chart-6)"}[item.type];
+ return '<details style="--c:'+color+'"><summary><span class="marker" aria-hidden="true"></span><span class="name">'+escapeHTML(item.name)+'<span class="sub">'+escapeHTML(item.type+' / '+item.group)+'</span>'+sourcePaths(item)+'</span><span class="badge '+(item.status==="Read"?"read":"")+'">'+escapeHTML(item.status)+'</span><span class="chevron" aria-hidden="true">›</span></summary><div class="detail"><p>'+escapeHTML(item.description)+'</p><p class="meaning">'+escapeHTML(item.detail)+'</p></div></details>';
+ }).join(""):'<div class="empty">No entries match these filters. Try another search or reset filters.</div>';
+ document.querySelectorAll("[data-type]").forEach(button=>{const active=button.dataset.type===state.type;button.setAttribute("aria-pressed",String(active));button.classList.toggle("active",active);});
+}
+function changeType(type){state.type=type;state.page=0;render();el("list").scrollTop=0;}
+document.querySelectorAll("[data-type]").forEach(button=>button.addEventListener("click",()=>changeType(button.dataset.type)));
+el("search").addEventListener("input",event=>{state.query=event.target.value.trim().toLowerCase();state.page=0;render();el("list").scrollTop=0;});
+el("status").addEventListener("change",event=>{state.status=event.target.value;state.page=0;render();el("list").scrollTop=0;});
+el("prev").addEventListener("click",()=>{state.page=Math.max(0,state.page-1);render();el("list").scrollTop=0;});
+el("next").addEventListener("click",()=>{state.page++;render();el("list").scrollTop=0;});
+el("reset").addEventListener("click",()=>{Object.assign(state,{type:"All",query:"",status:"all",page:0});el("search").value="";el("status").value="all";render();el("list").scrollTop=0;});
+function updateCounts(){
+ el("fileTabCount").textContent=DATA.filter(item=>item.type==="Files").length;
+ const agents=DATA.filter(item=>item.type==="Agent instructions");
+ el("agentCount").textContent=agents.length;el("agentTabCount").textContent=agents.length;
+ const skills=DATA.filter(item=>item.type==="Skills"),tools=DATA.filter(item=>item.type==="Tools"),sources=DATA.filter(item=>item.type==="Sources");
+ el("skillCount").textContent=skills.length;el("skillReadCount").textContent=skills.filter(item=>item.status==="Read").length+" full skill files read";
+ el("registryCount").textContent=tools.length;el("toolDetail").textContent=tools.filter(item=>item.status==="Exposed").length+" supplied definitions";
+ el("sourceCount").textContent=sources.length;el("skillTabCount").textContent=skills.length;el("toolTabCount").textContent=tools.length;el("sourceTabCount").textContent=sources.length;
+}
+updateCounts();
+render();
+const TELEMETRY = __CONTEXT_TELEMETRY__;
+let includeResponse=true;
+const ATTRIBUTION = __CONTEXT_ATTRIBUTION__;
+let selectedGroup="skills";
+function allocationGroups(){
+ return (ATTRIBUTION?.groups||[]).filter(group=>includeResponse||group.id!=="response");
+}
+function selectGroup(id){
+ selectedGroup=id;
+ renderAllocation();
+}
+function renderAllocation(){
+ const groups=allocationGroups(),used=includeResponse?TELEMETRY.latest.total:TELEMETRY.latest.input;
+ if(!groups.some(group=>group.id===selectedGroup))selectedGroup=groups[0]?.id;
+ const pct=tokens=>(tokens/TELEMETRY.capacity*100).toFixed(2)+"%";
+ const tokens=n=>n.toLocaleString("en-US");
+ const segment=group=>'<button class="segment" data-group="'+escapeHTML(group.id)+'" style="--segment-color:'+group.color+';width:'+(group.tokens/used*100)+'%" aria-pressed="'+(group.id===selectedGroup)+'" aria-label="'+escapeHTML(group.name+": "+pct(group.tokens)+" of the full window; "+(group.kind==="Measured"?"measured":"estimated attribution"))+'" title="'+escapeHTML(group.name+" · "+pct(group.tokens)+" of full window")+'"></button>';
+ el("usageFill").innerHTML=groups.map(segment).join("");
+ el("zoomSegments").innerHTML=groups.map(segment).join("");
+ el("breakdownTitle").textContent="Inside the used "+(used/TELEMETRY.capacity*100).toFixed(1)+"% · expanded";
+ el("groupLegend").innerHTML=groups.map(group=>'<button class="group-button" data-group="'+escapeHTML(group.id)+'" style="--segment-color:'+group.color+'" aria-pressed="'+(group.id===selectedGroup)+'"><i aria-hidden="true"></i>'+escapeHTML(group.name)+'<strong>'+(group.kind==="Measured"?"":"≈ ")+pct(group.tokens)+'</strong><span>'+tokens(group.tokens)+" tokens · "+escapeHTML(group.kind)+'</span></button>').join("");
+ const group=groups.find(group=>group.id===selectedGroup);
+ if(group){
+ el("attributionHeading").innerHTML=escapeHTML(group.name)+'<span>'+pct(group.tokens)+' of window · '+(group.tokens/used*100).toFixed(1)+'% of used context</span>';
+ el("sourceList").innerHTML=[...group.items].sort((a,b)=>b.tokens-a.tokens).map(item=>'<div class="source-row"><div class="source-name">'+escapeHTML(item.name)+sourcePaths(item,["agents","skills","files"].includes(group.id))+'<small>'+escapeHTML(item.note)+'</small></div><div class="source-size"><b>'+(item.kind==="Measured"?"":"≈ ")+pct(item.tokens)+'</b><small>'+tokens(item.tokens)+' tokens · '+escapeHTML(item.kind)+'</small></div></div>').join("");
+ }
+ el("attributionMethod").textContent=ATTRIBUTION?.method||"Attribution unavailable.";
+ document.querySelectorAll("[data-group]").forEach(button=>button.addEventListener("click",()=>selectGroup(button.dataset.group)));
+}
+function renderUsage(){
+ const t=TELEMETRY;
+ if(!t||!Number.isFinite(t.capacity)||t.capacity<=0){el("usageTokens").textContent="Usage unavailable";el("usageFill").style.width="0%";el("usageBar").removeAttribute("aria-valuenow");return;}
+ const key=includeResponse?"total":"input";
+ const used=t.latest[key],first=t.first[key],capacity=t.capacity;
+ const percent=Math.min(100,Math.max(0,used/capacity*100));
+ const firstPercent=Math.min(100,Math.max(0,first/capacity*100));
+ const number=n=>n.toLocaleString("en-US");
+ el("usagePercent").textContent=percent.toFixed(1)+"%";
+ el("usageTokens").textContent=number(used)+" / "+number(capacity)+" tokens";
+ el("usageFill").style.width=percent+"%";
+ el("usageBar").setAttribute("aria-label",percent.toFixed(1)+" percent used; click a source segment to inspect its estimated share");
+
+ el("usedTokens").textContent=number(used);
+ el("remainingTokens").textContent=number(Math.max(0,capacity-used));
+ el("allocationNote").textContent="Percentages refer to the full "+number(capacity)+"-token window. Click a color or category to inspect its sources.";
+ el("startupFill").style.width=firstPercent+"%";
+ el("startupUsage").textContent="First recorded request: "+number(first)+" tokens ("+firstPercent.toFixed(1)+"%)";
+ el("startupBar").setAttribute("aria-label","First recorded request: "+firstPercent.toFixed(1)+" percent used");
+ const time=new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",second:"2-digit",timeZoneName:"short"}).format(new Date(t.latest.timestamp));
+ el("usageTime").textContent="Recorded "+time+" · Local Codex telemetry · "+(t.scope==="before-request"?"Before inspection request":"Historical snapshot");
+ el("usageExplanation").textContent=(includeResponse?"Includes the latest request’s input and output, including reasoning.":"Shows input context only; excludes that request’s generated output and reasoning.")+" Cached input still occupies context. Headroom is not a guarantee of output length; output limits and compaction also apply."+(t.scope==="before-request"?" The inspection request and all later diagnostic work are excluded; this is the nearest earlier recorded reading.":" Historical reading; not guaranteed to precede the inspection request.");
+ el("usageMode").textContent="Include response: "+(includeResponse?"on":"off");
+ el("usageMode").setAttribute("aria-pressed",String(includeResponse));
+ renderAllocation();
+}
+el("usageMode").addEventListener("click",()=>{includeResponse=!includeResponse;renderUsage();});
+renderUsage();
+</script></body></html>

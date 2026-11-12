@@ -2,6 +2,29 @@
 
 My collection of skills
 
+## Download
+
+Download all the global skills into your current directory:
+
+```bash
+(
+  set -e
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+
+  curl -fsSL https://github.com/johnnymayodev/SKILLS.md/archive/refs/heads/main.tar.gz \
+    | tar -xzf - -C "$tmp" --strip-components=2 SKILLS.md-main/skills/global
+
+  for d in "$tmp"/global/*; do
+    [ -d "$d" ] || continue
+    rm -rf "./$(basename "$d")"
+    mv "$d" .
+  done
+)
+```
+
+Re-running the command replaces each global skill folder, so updates and new skills are applied cleanly. Other files in the directory are left untouched.
+
 ## Credits
 
 Some skills are copies or adaptations from these sources
